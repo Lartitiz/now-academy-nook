@@ -15,14 +15,32 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "magic">("signin");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const navigate = useNavigate();
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
+
+    if (mode === "magic") {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          shouldCreateUser: normalizedEmail === ADMIN_EMAIL,
+          emailRedirectTo: `${window.location.origin}/accueil`,
+        },
+      });
+      setLoading(false);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setSent(true);
+      return;
+    }
 
     if (mode === "signup") {
       if (normalizedEmail !== ADMIN_EMAIL) {
@@ -69,6 +87,38 @@ function AuthPage() {
           </div>
 
           <div className="rounded-3xl bg-white border border-[#FFD6E8] shadow-sm p-8">
+            {sent ? (
+              <div className="text-center space-y-3">
+                <h2 className="font-display text-2xl text-[#91014B]">Lien envoyé ✨</h2>
+                <p className="text-sm text-muted-foreground">
+                  Regarde ta boîte mail ({email}) et clique sur le lien pour te connecter.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { setSent(false); setMode("signin"); }}
+                  className="text-sm underline text-[#91014B]"
+                >
+                  Revenir
+                </button>
+              </div>
+            ) : (
+            <>
+            <div className="flex gap-2 mb-5 p-1 bg-[#FFF4F8] rounded-full">
+              <button
+                type="button"
+                onClick={() => setMode("signin")}
+                className={`flex-1 text-sm py-2 rounded-full transition ${mode !== "magic" ? "bg-white text-[#91014B] shadow-sm" : "text-muted-foreground"}`}
+              >
+                Mot de passe
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("magic")}
+                className={`flex-1 text-sm py-2 rounded-full transition ${mode === "magic" ? "bg-white text-[#91014B] shadow-sm" : "text-muted-foreground"}`}
+              >
+                Lien par email
+              </button>
+            </div>
             <form onSubmit={onSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-[#91014B]">Ton email</Label>
@@ -83,6 +133,7 @@ function AuthPage() {
                     className="border-[#FFD6E8] focus-visible:ring-[#FB3D80]"
                   />
                 </div>
+                {mode !== "magic" && (
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-[#91014B]">Mot de passe</Label>
                   <Input
@@ -97,13 +148,15 @@ function AuthPage() {
                     className="border-[#FFD6E8] focus-visible:ring-[#FB3D80]"
                   />
                 </div>
+                )}
                 <Button
                   type="submit"
                   disabled={loading}
                   className="w-full bg-[#FB3D80] hover:bg-[#91014B] text-white"
                 >
-                  {loading ? "…" : mode === "signup" ? "Créer mon compte" : "Me connecter"}
+                  {loading ? "…" : mode === "magic" ? "Recevoir le lien" : mode === "signup" ? "Créer mon compte" : "Me connecter"}
                 </Button>
+                {mode !== "magic" && (
                 <p className="text-xs text-muted-foreground text-center">
                   {mode === "signin" ? (
                     <>
@@ -121,7 +174,10 @@ function AuthPage() {
                     </>
                   )}
                 </p>
+                )}
             </form>
+            </>
+            )}
           </div>
 
           <p className="text-xs text-center text-muted-foreground mt-6">
