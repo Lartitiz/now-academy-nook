@@ -213,7 +213,7 @@ function ContentPanel() {
           <ModuleEditor
             key={m.id}
             module={m}
-            onSave={async (changes) => {
+            onSave={async (changes: { title: string; position: number }) => {
               await doUpsertModule({ data: { id: m.id, title: changes.title, position: changes.position } });
               refresh();
               toast.success("Module enregistré");
@@ -224,12 +224,12 @@ function ContentPanel() {
               refresh();
               toast.success("Module supprimé");
             }}
-            onLessonSave={async (lesson) => {
+            onLessonSave={async (lesson: any) => {
               await doUpsertLesson({ data: lesson });
               refresh();
               toast.success("Leçon enregistrée");
             }}
-            onLessonDelete={async (id) => {
+            onLessonDelete={async (id: string) => {
               if (!confirm("Supprimer cette leçon ?")) return;
               await doDeleteLesson({ data: { id } });
               refresh();
