@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { getLesson } from "@/lib/content.functions";
 import { listMyProgress, markLessonCompleted, unmarkLesson } from "@/lib/progress.functions";
 import { getMyAccess } from "@/lib/members.functions";
@@ -38,6 +39,26 @@ function LessonPage() {
   const { data: progress } = useSuspenseQuery(progressQO(fetchProgress));
   const completed = new Set(progress.map((p: any) => p.lesson_id));
   const isDone = completed.has(id);
+
+  const markdownComponents = {
+    p({ children }: { children?: React.ReactNode }) {
+      if (
+        typeof children === "string" &&
+        children.trim() === "--- ÉTAPES ---"
+      ) {
+        return (
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-[#FFD6E8]" />
+            <span className="text-[#FB3D80] font-medium text-xs tracking-[0.2em] uppercase">
+              Étapes
+            </span>
+            <div className="flex-1 h-px bg-[#FFD6E8]" />
+          </div>
+        );
+      }
+      return <p>{children}</p>;
+    },
+  };
 
   const toggle = async () => {
     try {
@@ -82,7 +103,7 @@ function LessonPage() {
 
           {lesson.body && lesson.body.trim().length > 0 && (
             <div className="prose prose-neutral max-w-none rounded-3xl bg-white border border-[#FFD6E8] p-8 shadow-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.body}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={markdownComponents}>{lesson.body}</ReactMarkdown>
             </div>
           )}
 
