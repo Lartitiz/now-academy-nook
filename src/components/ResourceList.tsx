@@ -2,6 +2,20 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 
 type Resource = { label: string; url: string };
+type RawResource = string | Resource;
+
+function normalizeResource(r: RawResource): Resource {
+  if (typeof r === "string") {
+    const url = r;
+    let label = "Ressource";
+    if (url.includes("youtube.com") || url.includes("youtu.be")) label = "Vidéo YouTube";
+    else if (url.includes("loom.com")) label = "Vidéo Loom";
+    else if (url.includes("canva.com")) label = "Ressource Canva";
+    else if (url.includes("docs.google.com")) label = "Document Google Docs";
+    return { url, label };
+  }
+  return r;
+}
 
 function getYouTubeEmbed(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{6,})/);
