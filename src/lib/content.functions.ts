@@ -2,15 +2,24 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ResourceSchema = z.object({
-  label: z.string(),
-  url: z.string().url(),
+const ResourceSchema = z.union([
+  z.string(),
+  z.object({ label: z.string(), url: z.string() }),
+]);
+
+const StepSeed = z.object({
+  title: z.string().default(""),
+  body: z.string().default(""),
+  resources: z.array(ResourceSchema).default([]),
 });
 
 const LessonSeed = z.object({
   title: z.string(),
   position: z.number().int().default(0),
   body: z.string().default(""),
+  intro: z.string().default(""),
+  videos: z.array(z.string()).default([]),
+  steps: z.array(StepSeed).default([]),
   resources: z.array(ResourceSchema).default([]),
 });
 
@@ -53,7 +62,7 @@ export const getLesson = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data: lesson, error } = await supabase
       .from("lessons")
-      .select("id, module_id, title, position, body, resources, modules(id, title, position)")
+      .select("id, module_id, title, position, body, intro, videos, steps, resources, modules(id, title, position)")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -95,6 +104,9 @@ export const upsertLesson = createServerFn({ method: "POST" })
         title: z.string().min(1),
         position: z.number().int(),
         body: z.string(),
+        intro: z.string().optional(),
+        videos: z.array(z.string()).optional(),
+        steps: z.array(StepSeed).optional(),
         resources: z.array(ResourceSchema),
       })
       .parse(d),
@@ -153,6 +165,9 @@ export const importSeed = createServerFn({ method: "POST" })
           title: l.title,
           position: l.position,
           body: l.body,
+          intro: l.intro ?? "",
+          videos: l.videos ?? [],
+          steps: l.steps ?? [],
           resources: l.resources,
         }));
         const { error: lErr } = await supabaseAdmin.from("lessons").insert(rows);
