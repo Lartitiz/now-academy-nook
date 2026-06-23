@@ -8,9 +8,28 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden");
 }
 
+const ADMIN_EMAIL = "laetitia@nowadaysagency.com";
+
+async function ensureBootstrapAdmin(userId: string, email?: string | null) {
+  if ((email ?? "").toLowerCase() !== ADMIN_EMAIL) return;
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [{ error: roleError }, { error: memberError }] = await Promise.all([
+    supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" }),
+    supabaseAdmin
+      .from("members")
+      .upsert({ user_id: userId, email: ADMIN_EMAIL, full_name: "Laetitia" }, { onConflict: "user_id" }),
+  ]);
+  if (roleError) throw new Error(roleError.message);
+  if (memberError) throw new Error(memberError.message);
+}
+
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await ensureBootstrapAdmin(context.userId, context.claims?.email as string | undefined);
     const [{ data: member }, { data: isAdmin }] = await Promise.all([
       context.supabase.from("members").select("id").eq("user_id", context.userId).maybeSingle(),
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),

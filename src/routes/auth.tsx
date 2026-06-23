@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+const ADMIN_EMAIL = "laetitia@nowadaysagency.com";
+
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
@@ -19,11 +21,12 @@ function AuthPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       options: {
         emailRedirectTo: `${window.location.origin}/accueil`,
-        shouldCreateUser: false,
+        shouldCreateUser: normalizedEmail === ADMIN_EMAIL,
       },
     });
     setLoading(false);
