@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { notFound } from "@tanstack/react-router";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -66,7 +67,7 @@ export const getLesson = createServerFn({ method: "GET" })
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!lesson) throw new Error("Leçon introuvable");
+    if (!lesson) throw notFound();
 
     const { data: all, error: allErr } = await supabase
       .from("lessons")
