@@ -14,7 +14,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -22,22 +23,38 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
-    const { error } = await supabase.auth.signInWithOtp({
+
+    if (mode === "signup") {
+      if (normalizedEmail !== ADMIN_EMAIL) {
+        setLoading(false);
+        toast.error("Cet espace est réservé. Demande à l'équipe de t'inviter.");
+        return;
+      }
+      const { error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/accueil` },
+      });
+      setLoading(false);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Compte créé. Tu es connecté·e.");
+      navigate({ to: "/accueil" });
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/accueil`,
-        shouldCreateUser: normalizedEmail === ADMIN_EMAIL,
-      },
+      password,
     });
     setLoading(false);
     if (error) {
-      // Show same message either way to avoid email enumeration
-      toast.error("Si tu es inscrit·e, tu vas recevoir un lien sous peu.");
-      setSent(true);
+      toast.error("Email ou mot de passe incorrect.");
       return;
     }
-    setSent(true);
-    toast.success("Vérifie ta boîte mail — ton lien de connexion arrive.");
+    navigate({ to: "/accueil" });
   };
 
   return (
@@ -52,30 +69,7 @@ function AuthPage() {
           </div>
 
           <div className="rounded-3xl bg-white border border-[#FFD6E8] shadow-sm p-8">
-            {sent ? (
-              <div className="text-center space-y-4">
-                <div className="inline-block px-4 py-2 rounded-full bg-[#FFE561] text-[#91014B] text-sm font-medium">
-                  Lien envoyé
-                </div>
-                <p className="text-sm text-foreground">
-                  On vient de t'envoyer un email avec un lien de connexion. Clique dessus pour entrer dans ton espace.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Pense à vérifier tes spams. Tu ne reçois rien ? Cet espace est réservé aux inscrit·es de la Now' Academy.
-                </p>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setSent(false);
-                    setEmail("");
-                  }}
-                  className="text-[#91014B]"
-                >
-                  Essayer une autre adresse
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={onSubmit} className="space-y-5">
+            <form onSubmit={onSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-[#91014B]">Ton email</Label>
                   <Input
@@ -89,18 +83,45 @@ function AuthPage() {
                     className="border-[#FFD6E8] focus-visible:ring-[#FB3D80]"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[#91014B]">Mot de passe</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="border-[#FFD6E8] focus-visible:ring-[#FB3D80]"
+                  />
+                </div>
                 <Button
                   type="submit"
                   disabled={loading}
                   className="w-full bg-[#FB3D80] hover:bg-[#91014B] text-white"
                 >
-                  {loading ? "Envoi…" : "Recevoir mon lien de connexion"}
+                  {loading ? "…" : mode === "signup" ? "Créer mon compte" : "Me connecter"}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  Pas de mot de passe. On t'envoie un lien magique à chaque connexion.
+                  {mode === "signin" ? (
+                    <>
+                      Première connexion ?{" "}
+                      <button type="button" onClick={() => setMode("signup")} className="underline text-[#91014B]">
+                        Créer un compte
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Déjà inscrit·e ?{" "}
+                      <button type="button" onClick={() => setMode("signin")} className="underline text-[#91014B]">
+                        Me connecter
+                      </button>
+                    </>
+                  )}
                 </p>
-              </form>
-            )}
+            </form>
           </div>
 
           <p className="text-xs text-center text-muted-foreground mt-6">
