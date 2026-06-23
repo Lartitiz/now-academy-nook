@@ -135,28 +135,37 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          intro: string | null
           module_id: string
           position: number
           resources: Json
+          steps: Json
           title: string
+          videos: Json
         }
         Insert: {
           body?: string
           created_at?: string
           id?: string
+          intro?: string | null
           module_id: string
           position?: number
           resources?: Json
+          steps?: Json
           title: string
+          videos?: Json
         }
         Update: {
           body?: string
           created_at?: string
           id?: string
+          intro?: string | null
           module_id?: string
           position?: number
           resources?: Json
+          steps?: Json
           title?: string
+          videos?: Json
         }
         Relationships: [
           {
