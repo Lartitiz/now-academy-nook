@@ -3,6 +3,7 @@ import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-
 import { useServerFn } from "@tanstack/react-start";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { getLesson } from "@/lib/content.functions";
 import { listMyProgress, markLessonCompleted, unmarkLesson } from "@/lib/progress.functions";
 import { getMyAccess } from "@/lib/members.functions";
