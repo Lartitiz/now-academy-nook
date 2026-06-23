@@ -69,13 +69,14 @@ function LessonPage() {
 
   const lesson = data.lesson as any;
   const resources = Array.isArray(lesson.resources) ? lesson.resources : [];
-  const firstVideo = resources.find((r: any) => isVideoUrl(urlOf(r)));
-  const otherResources = resources.filter((r: any) => r !== firstVideo);
-  const firstVideoUrl = firstVideo ? urlOf(firstVideo) : null;
-  const firstVideoEmbed = firstVideoUrl
-    ? getYouTubeEmbed(firstVideoUrl) ?? getLoomEmbed(firstVideoUrl)
-    : null;
-  const firstVideoLabel = firstVideoUrl ? labelFromUrl(firstVideoUrl) : "";
+  const videos: string[] = Array.isArray(lesson.videos) ? lesson.videos : [];
+  const steps: Array<{ title?: string; body?: string; resources?: any[] }> =
+    Array.isArray(lesson.steps) ? lesson.steps : [];
+  const intro: string = typeof lesson.intro === "string" ? lesson.intro : "";
+  // Collect URLs already shown inside steps to avoid duplicating them at the bottom
+  const stepResourceUrls = new Set<string>();
+  steps.forEach((s) => (s.resources ?? []).forEach((r) => stepResourceUrls.add(urlOf(r))));
+  const leftoverResources = resources.filter((r: any) => !stepResourceUrls.has(urlOf(r)));
 
   const totalLessons = useMemo(
     () => (modules ?? []).reduce((acc: number, m: any) => acc + (m.lessons?.length ?? 0), 0),
@@ -245,20 +246,73 @@ function LessonPage() {
               </h1>
             </header>
 
-            {firstVideoEmbed && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-[#FB3D80] uppercase tracking-wider">
-                  {firstVideoLabel}
-                </p>
-                <div className="aspect-video w-full overflow-hidden rounded-3xl border border-[#FFD6E8] shadow-sm bg-black/5">
-                  <iframe
-                    src={firstVideoEmbed}
-                    title={firstVideoLabel}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
-                </div>
+            {videos.length > 0 && (
+              <div className="space-y-4">
+                {videos.map((v, i) => {
+                  const embed = getYouTubeEmbed(v) ?? getLoomEmbed(v) ?? v;
+                  return (
+                    <div
+                      key={i}
+                      className="aspect-video w-full overflow-hidden rounded-3xl border border-[#FFD6E8] shadow-sm bg-black/5"
+                    >
+                      <iframe
+                        src={embed}
+                        title={`Vidéo ${i + 1}`}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {intro && intro.trim().length > 0 && (
+              <div className="prose prose-neutral max-w-none rounded-3xl bg-white border border-[#FFD6E8] p-6 sm:p-8 shadow-sm">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  components={markdownComponents}
+                >
+                  {intro}
+                </ReactMarkdown>
+              </div>
+            )}
+
+            {steps.length > 0 && (
+              <div className="space-y-5">
+                {steps.map((s, i) => (
+                  <div
+                    key={i}
+                    className="rounded-3xl bg-white border border-[#FFD6E8] shadow-sm p-6 sm:p-8 space-y-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-[#FB3D80] text-white text-sm font-semibold shrink-0">
+                        {i + 1}
+                      </span>
+                      {s.title && (
+                        <h3 className="font-display text-[18px] sm:text-lg text-[#FB3D80] leading-snug m-0">
+                          {s.title}
+                        </h3>
+                      )}
+                    </div>
+                    {s.body && s.body.trim().length > 0 && (
+                      <div className="prose prose-neutral max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkBreaks]}
+                          components={markdownComponents}
+                        >
+                          {s.body}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                    {s.resources && s.resources.length > 0 && (
+                      <div className="pt-2">
+                        <ResourceList resources={s.resources as any} />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -273,7 +327,7 @@ function LessonPage() {
               </div>
             )}
 
-            {otherResources.length > 0 && <ResourceList resources={otherResources} />}
+            {leftoverResources.length > 0 && <ResourceList resources={leftoverResources} />}
 
             <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#FFD6E8]">
               <Button
