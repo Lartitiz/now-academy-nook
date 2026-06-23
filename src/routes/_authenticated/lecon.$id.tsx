@@ -25,7 +25,40 @@ const modulesQO = (fn: any) =>
 
 export const Route = createFileRoute("/_authenticated/lecon/$id")({
   component: LessonPage,
+  errorComponent: LessonError,
+  notFoundComponent: LessonNotFound,
 });
+
+function LessonError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div className="min-h-screen bg-[#FFF4F8] flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white border border-[#FFD6E8] rounded-3xl p-8 text-center shadow-sm">
+        <h1 className="font-display text-2xl text-[#91014B] mb-2">Une erreur est survenue</h1>
+        <p className="text-sm text-[#91014B]/70 mb-6">{error.message}</p>
+        <div className="flex justify-center gap-2">
+          <Button onClick={reset} className="bg-[#FB3D80] hover:bg-[#91014B] text-white">Réessayer</Button>
+          <Link to="/accueil"><Button variant="outline" className="border-[#FFD6E8] text-[#91014B]">Retour au sommaire</Button></Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LessonNotFound() {
+  return (
+    <div className="min-h-screen bg-[#FFF4F8] flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white border border-[#FFD6E8] rounded-3xl p-8 text-center shadow-sm">
+        <h1 className="font-display text-2xl text-[#91014B] mb-2">Leçon introuvable</h1>
+        <p className="text-sm text-[#91014B]/70 mb-6">
+          Cette leçon n'existe plus ou a été déplacée. Le contenu a peut-être été réimporté.
+        </p>
+        <Link to="/accueil">
+          <Button className="bg-[#FB3D80] hover:bg-[#91014B] text-white">Retour au sommaire</Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function isVideoUrl(url: string) {
   return /youtube\.com|youtu\.be|loom\.com/.test(url);
