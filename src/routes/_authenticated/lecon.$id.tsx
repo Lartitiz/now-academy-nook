@@ -40,6 +40,26 @@ function LessonPage() {
   const completed = new Set(progress.map((p: any) => p.lesson_id));
   const isDone = completed.has(id);
 
+  const markdownComponents = {
+    p({ children }: { children?: React.ReactNode }) {
+      if (
+        typeof children === "string" &&
+        children.trim() === "--- ÉTAPES ---"
+      ) {
+        return (
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-[#FFD6E8]" />
+            <span className="text-[#FB3D80] font-medium text-xs tracking-[0.2em] uppercase">
+              Étapes
+            </span>
+            <div className="flex-1 h-px bg-[#FFD6E8]" />
+          </div>
+        );
+      }
+      return <p>{children}</p>;
+    },
+  };
+
   const toggle = async () => {
     try {
       if (isDone) {
