@@ -26,14 +26,16 @@ function getLoomEmbed(url: string): string | null {
   return m ? `https://www.loom.com/embed/${m[1]}` : null;
 }
 
-export function ResourceList({ resources }: { resources: Resource[] }) {
+export function ResourceList({ resources }: { resources: RawResource[] }) {
   if (!resources || resources.length === 0) return null;
+
+  const normalized = resources.map(normalizeResource);
 
   return (
     <div className="space-y-5">
       <h3 className="font-display text-2xl text-[#91014B]">Ressources</h3>
       <div className="space-y-6">
-        {resources.map((r, i) => {
+        {normalized.map((r, i) => {
           const yt = getYouTubeEmbed(r.url);
           const loom = getLoomEmbed(r.url);
           if (yt || loom) {
