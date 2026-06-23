@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
 import { Route as AuthenticatedLeconIdRouteImport } from './routes/_authenticated/lecon.$id'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -45,6 +46,12 @@ const AuthenticatedLeconIdRoute = AuthenticatedLeconIdRouteImport.update({
   path: '/lecon/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/accueil': typeof AuthenticatedAccueilRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/lecon/$id': typeof AuthenticatedLeconIdRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +67,7 @@ export interface FileRoutesByTo {
   '/accueil': typeof AuthenticatedAccueilRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/lecon/$id': typeof AuthenticatedLeconIdRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +77,25 @@ export interface FileRoutesById {
   '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/lecon/$id': typeof AuthenticatedLeconIdRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/accueil' | '/admin' | '/lecon/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/accueil'
+    | '/admin'
+    | '/lecon/$id'
+    | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/accueil' | '/admin' | '/lecon/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/accueil'
+    | '/admin'
+    | '/lecon/$id'
+    | '/lovable/email/queue/process'
   id:
     | '__root__'
     | '/'
@@ -82,12 +104,14 @@ export interface FileRouteTypes {
     | '/_authenticated/accueil'
     | '/_authenticated/admin'
     | '/_authenticated/lecon/$id'
+    | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -134,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeconIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -156,6 +187,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
