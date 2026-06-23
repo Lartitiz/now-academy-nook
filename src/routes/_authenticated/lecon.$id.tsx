@@ -103,7 +103,7 @@ function LessonPage() {
 
           {lesson.body && lesson.body.trim().length > 0 && (
             <div className="prose prose-neutral max-w-none rounded-3xl bg-white border border-[#FFD6E8] p-8 shadow-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.body}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={markdownComponents}>{lesson.body}</ReactMarkdown>
             </div>
           )}
 
