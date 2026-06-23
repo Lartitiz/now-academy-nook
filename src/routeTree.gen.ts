@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAccueilRouteImport } from './routes/_authenticated/accueil'
 import { Route as AuthenticatedLeconIdRouteImport } from './routes/_authenticated/lecon.$id'
 
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAccueilRoute = AuthenticatedAccueilRouteImport.update({
   id: '/accueil',
   path: '/accueil',
@@ -44,12 +50,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/accueil': typeof AuthenticatedAccueilRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/lecon/$id': typeof AuthenticatedLeconIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/accueil': typeof AuthenticatedAccueilRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/lecon/$id': typeof AuthenticatedLeconIdRoute
 }
 export interface FileRoutesById {
@@ -58,19 +66,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/accueil': typeof AuthenticatedAccueilRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/lecon/$id': typeof AuthenticatedLeconIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/accueil' | '/lecon/$id'
+  fullPaths: '/' | '/auth' | '/accueil' | '/admin' | '/lecon/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/accueil' | '/lecon/$id'
+  to: '/' | '/auth' | '/accueil' | '/admin' | '/lecon/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/accueil'
+    | '/_authenticated/admin'
     | '/_authenticated/lecon/$id'
   fileRoutesById: FileRoutesById
 }
@@ -103,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/accueil': {
       id: '/_authenticated/accueil'
       path: '/accueil'
@@ -122,11 +139,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccueilRoute: typeof AuthenticatedAccueilRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedLeconIdRoute: typeof AuthenticatedLeconIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccueilRoute: AuthenticatedAccueilRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedLeconIdRoute: AuthenticatedLeconIdRoute,
 }
 
