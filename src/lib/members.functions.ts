@@ -26,10 +26,25 @@ async function ensureBootstrapAdmin(userId: string, email?: string | null) {
   if (memberError) throw new Error(memberError.message);
 }
 
+// Open enrollment: anyone who authenticates is enrolled as a member on first access.
+// The user_id comes from the authenticated context, so a caller can only ever
+// enroll themselves — never someone else.
+async function ensureMembership(userId: string, email?: string | null) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin
+    .from("members")
+    .upsert(
+      { user_id: userId, email: (email ?? "").toLowerCase() || null },
+      { onConflict: "user_id", ignoreDuplicates: true },
+    );
+  if (error) throw new Error(error.message);
+}
+
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await ensureBootstrapAdmin(context.userId, context.claims?.email as string | undefined);
+    await ensureMembership(context.userId, context.claims?.email as string | undefined);
     const [{ data: member }, { data: isAdmin }] = await Promise.all([
       context.supabase.from("members").select("id").eq("user_id", context.userId).maybeSingle(),
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),

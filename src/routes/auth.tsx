@@ -6,8 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-const ADMIN_EMAIL = "laetitia@nowadaysagency.com";
-
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
@@ -29,7 +27,7 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
         options: {
-          shouldCreateUser: normalizedEmail === ADMIN_EMAIL,
+          shouldCreateUser: true,
           emailRedirectTo: `${window.location.origin}/accueil`,
         },
       });
@@ -43,11 +41,6 @@ function AuthPage() {
     }
 
     if (mode === "signup") {
-      if (normalizedEmail !== ADMIN_EMAIL) {
-        setLoading(false);
-        toast.error("Cet espace est réservé. Demande à l'équipe de t'inviter.");
-        return;
-      }
       const { error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -58,7 +51,7 @@ function AuthPage() {
         toast.error(error.message);
         return;
       }
-      toast.success("Compte créé. Tu es connecté·e.");
+      toast.success("Compte créé. Bienvenue à la Now' Academy ✨");
       navigate({ to: "/accueil" });
       return;
     }
