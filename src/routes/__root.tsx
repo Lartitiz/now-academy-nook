@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -36,7 +36,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -46,16 +46,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#FFF4F8] px-4">
       <div className="max-w-md text-center">
-        <h1 className="font-display text-2xl text-[#91014B]">
-          Cette page n'a pas pu charger
-        </h1>
+        <h1 className="font-display text-2xl text-[#91014B]">Cette page n'a pas pu charger</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Quelque chose a coincé de notre côté. Tu peux réessayer ou revenir à l'accueil.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
+              void router.options.context?.queryClient.resetQueries();
+              void router.invalidate();
               reset();
             }}
             className="inline-flex items-center justify-center rounded-md bg-[#FB3D80] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#91014B]"
@@ -80,21 +79,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Now' Academy — Espace membres" },
-      { name: "description", content: "L'espace formation privé des inscrit·es de la Now' Academy." },
+      {
+        name: "description",
+        content: "L'espace formation privé des inscrit·es de la Now' Academy.",
+      },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "Now' Academy — Espace membres" },
       { name: "twitter:title", content: "Now' Academy — Espace membres" },
-      { property: "og:description", content: "L'espace formation privé des inscrit·es de la Now' Academy." },
-      { name: "twitter:description", content: "L'espace formation privé des inscrit·es de la Now' Academy." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/666a8107-b11e-4f88-a0ce-00f74eb3fa1c/id-preview-b6b29454--a75a35f8-e782-4bb9-8b51-6fc7a1a1486d.lovable.app-1782241045757.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/666a8107-b11e-4f88-a0ce-00f74eb3fa1c/id-preview-b6b29454--a75a35f8-e782-4bb9-8b51-6fc7a1a1486d.lovable.app-1782241045757.png" },
+      {
+        property: "og:description",
+        content: "L'espace formation privé des inscrit·es de la Now' Academy.",
+      },
+      {
+        name: "twitter:description",
+        content: "L'espace formation privé des inscrit·es de la Now' Academy.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/666a8107-b11e-4f88-a0ce-00f74eb3fa1c/id-preview-b6b29454--a75a35f8-e782-4bb9-8b51-6fc7a1a1486d.lovable.app-1782241045757.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/666a8107-b11e-4f88-a0ce-00f74eb3fa1c/id-preview-b6b29454--a75a35f8-e782-4bb9-8b51-6fc7a1a1486d.lovable.app-1782241045757.png",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
+  pendingComponent: () => (
+    <div
+      role="status"
+      className="flex min-h-screen items-center justify-center bg-rose-pale text-rouge"
+    >
+      Chargement de ton espace…
+    </div>
+  ),
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
@@ -116,9 +143,15 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const previousUser = useRef<string | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const userId = session?.user.id ?? null;
+      if (event === "SIGNED_OUT" || previousUser.current !== userId) {
+        queryClient.clear();
+        previousUser.current = userId;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
