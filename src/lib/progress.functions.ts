@@ -17,12 +17,21 @@ export const markLessonCompleted = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { lesson_id: string }) => z.object({ lesson_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from("lesson_progress")
-      .upsert(
-        { user_id: context.userId, lesson_id: data.lesson_id, completed_at: new Date().toISOString() },
-        { onConflict: "user_id,lesson_id" },
-      );
+    const { data: lesson, error: accessError } = await context.supabase
+      .from("lessons")
+      .select("id")
+      .eq("id", data.lesson_id)
+      .maybeSingle();
+    if (accessError) throw new Error(accessError.message);
+    if (!lesson) throw new Error("Cette leçon n’est plus accessible.");
+    const { error } = await context.supabase.from("lesson_progress").upsert(
+      {
+        user_id: context.userId,
+        lesson_id: data.lesson_id,
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,lesson_id" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });

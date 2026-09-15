@@ -1,8 +1,10 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertAdmin(supabase: any, userId: string) {
+async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Forbidden");
@@ -20,7 +22,10 @@ async function ensureBootstrapAdmin(userId: string, email?: string | null) {
       .upsert({ user_id: userId, role: "admin" }, { onConflict: "user_id,role" }),
     supabaseAdmin
       .from("members")
-      .upsert({ user_id: userId, email: ADMIN_EMAIL, full_name: "Laetitia" }, { onConflict: "user_id" }),
+      .upsert(
+        { user_id: userId, email: ADMIN_EMAIL, full_name: "Laetitia" },
+        { onConflict: "user_id" },
+      ),
   ]);
   if (roleError) throw new Error(roleError.message);
   if (memberError) throw new Error(memberError.message);
@@ -45,10 +50,13 @@ export const getMyAccess = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await ensureBootstrapAdmin(context.userId, context.claims?.email as string | undefined);
     await ensureMembership(context.userId, context.claims?.email as string | undefined);
-    const [{ data: member }, { data: isAdmin }] = await Promise.all([
-      context.supabase.from("members").select("id").eq("user_id", context.userId).maybeSingle(),
-      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-    ]);
+    const [{ data: member, error: memberError }, { data: isAdmin, error: roleError }] =
+      await Promise.all([
+        context.supabase.from("members").select("id").eq("user_id", context.userId).maybeSingle(),
+        context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      ]);
+    if (memberError) throw new Error(memberError.message);
+    if (roleError) throw new Error(roleError.message);
     return { isMember: !!member, isAdmin: !!isAdmin };
   });
 
@@ -74,10 +82,16 @@ export const addMembers = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const results: Array<{ email: string; status: "invited" | "linked" | "exists" | "error"; message?: string }> = [];
-    const redirectTo = (process.env.SITE_URL || "") + "/accueil";
+    const results: Array<{
+      email: string;
+      status: "invited" | "linked" | "exists" | "error";
+      message?: string;
+    }> = [];
+    const redirectTo = process.env.SITE_URL
+      ? new URL("/accueil", process.env.SITE_URL).href
+      : undefined;
 
-    for (const rawEmail of data.emails) {
+    for (const rawEmail of new Set(data.emails.map((email) => email.trim().toLowerCase()))) {
       const email = rawEmail.trim().toLowerCase();
       if (!email) continue;
       try {
@@ -88,10 +102,19 @@ export const addMembers = createServerFn({ method: "POST" })
         let userId = inv.data?.user?.id;
         if (inv.error || !userId) {
           // Already registered — look up the user via listUsers (paginate small set).
-          const list = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          const found = list.data?.users.find((u) => (u.email ?? "").toLowerCase() === email);
+          let found: { id: string } | undefined;
+          for (let page = 1; ; page++) {
+            const list = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+            if (list.error) throw list.error;
+            found = list.data.users.find((user) => (user.email ?? "").toLowerCase() === email);
+            if (found || list.data.users.length < 1000) break;
+          }
           if (!found) {
-            results.push({ email, status: "error", message: inv.error?.message ?? "user not found" });
+            results.push({
+              email,
+              status: "error",
+              message: inv.error?.message ?? "user not found",
+            });
             continue;
           }
           userId = found.id;
@@ -104,8 +127,12 @@ export const addMembers = createServerFn({ method: "POST" })
         } else {
           results.push({ email, status: inv.error ? "linked" : "invited" });
         }
-      } catch (e: any) {
-        results.push({ email, status: "error", message: e?.message ?? String(e) });
+      } catch (e) {
+        results.push({
+          email,
+          status: "error",
+          message: e instanceof Error ? e.message : String(e),
+        });
       }
     }
     return { results };
