@@ -80,15 +80,15 @@ function urlOf(resource: RawResource): string {
 }
 
 function LessonPage() {
+  const { user } = Route.useRouteContext();
   const fetchAccess = useServerFn(getMyAccess);
   const { data: access } = useSuspenseQuery(accessQO(fetchAccess));
   const { id } = Route.useParams();
-  if (!access.isMember && !access.isAdmin) return <AccessDenied />;
-  return <LessonContent key={id} isAdmin={access.isAdmin} />;
+  if (!user || (!access.isMember && !access.isAdmin)) return <AccessDenied />;
+  return <LessonContent key={id} isAdmin={access.isAdmin} userId={user.id} />;
 }
 
-function LessonContent({ isAdmin }: { isAdmin: boolean }) {
-  const { user } = Route.useRouteContext();
+function LessonContent({ isAdmin, userId }: { isAdmin: boolean; userId: string }) {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -362,7 +362,7 @@ function LessonContent({ isAdmin }: { isAdmin: boolean }) {
             {steps.length > 0 && (
               <ExerciseList
                 lessonId={id}
-                userId={user.id}
+                userId={userId}
                 steps={steps}
                 renderBody={(body) => (
                   <ReactMarkdown
