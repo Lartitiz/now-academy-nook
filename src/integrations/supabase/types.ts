@@ -14,6 +14,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercise_progress: {
+        Row: { user_id: string; lesson_id: string; exercise_id: string; completed_at: string }
+        Insert: { user_id: string; lesson_id: string; exercise_id: string; completed_at?: string }
+        Update: { user_id?: string; lesson_id?: string; exercise_id?: string; completed_at?: string }
+        Relationships: [{ foreignKeyName: "exercise_progress_lesson_id_fkey"; columns: ["lesson_id"]; isOneToOne: false; referencedRelation: "lessons"; referencedColumns: ["id"] }]
+      }
       email_send_log: {
         Row: {
           created_at: string

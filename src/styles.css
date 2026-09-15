@@ -300,3 +300,24 @@
   border-color: #ffd6e8;
   margin: 2rem 0;
 }
+
+/* Use the bundled semibold face for clear exercise headings. */
+.exercise-title,
+.lesson-prose :is(h1, h2, h3, h4, h5, h6) {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-weight: 600;
+}
+.exercise-prose {
+  max-width: 68ch;
+}
+.exercise-prose strong {
+  font-weight: 600;
+  color: #91014b;
+}
+.exercise-prose > p:has(> strong:only-child) {
+  margin-top: 1.7em;
+  margin-bottom: -0.3em;
+}
+.exercise-prose > p:first-child {
+  margin-top: 0;
+}

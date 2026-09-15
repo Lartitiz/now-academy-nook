@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, BookOpen, Check, Eye, EyeOff, LoaderCircle, Mail } from "lucide-react";
 
-export const Route = createFileRoute("/auth")({ component: AuthPage });
+export const Route = createFileRoute("/auth")({ ssr: false, component: AuthPage });
 
 function AuthPage() {
   const [email, setEmail] = useState("");

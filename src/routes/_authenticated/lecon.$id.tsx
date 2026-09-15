@@ -21,6 +21,8 @@ import {
 } from "@/lib/queries";
 import { learningSummary, videoEmbed, safeHttpUrl, type RawResource } from "@/lib/learning";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ExerciseList } from "@/components/ExerciseList";
+import { formatExerciseBody } from "@/lib/exercises";
 import { AccessDenied } from "@/components/AccessDenied";
 
 export const Route = createFileRoute("/_authenticated/lecon/$id")({
@@ -86,6 +88,7 @@ function LessonPage() {
 }
 
 function LessonContent({ isAdmin }: { isAdmin: boolean }) {
+  const { user } = Route.useRouteContext();
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -357,40 +360,19 @@ function LessonContent({ isAdmin }: { isAdmin: boolean }) {
             )}
 
             {steps.length > 0 && (
-              <div className="space-y-5">
-                {steps.map((s, i) => (
-                  <div
-                    key={i}
-                    className="rounded-3xl bg-white border border-[#FFD6E8] shadow-sm p-6 sm:p-8 space-y-4"
+              <ExerciseList
+                lessonId={id}
+                userId={user.id}
+                steps={steps}
+                renderBody={(body) => (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkBreaks]}
+                    components={markdownComponents}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-[#FB3D80] text-white text-sm font-semibold shrink-0">
-                        {i + 1}
-                      </span>
-                      {s.title && (
-                        <h2 className="font-display text-[18px] sm:text-lg text-rouge leading-snug m-0">
-                          {s.title}
-                        </h2>
-                      )}
-                    </div>
-                    {s.body && s.body.trim().length > 0 && (
-                      <div className="lesson-prose">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkBreaks]}
-                          components={markdownComponents}
-                        >
-                          {s.body}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                    {s.resources && s.resources.length > 0 && (
-                      <div className="pt-2">
-                        <ResourceList resources={s.resources} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    {formatExerciseBody(body)}
+                  </ReactMarkdown>
+                )}
+              />
             )}
 
             {lesson.body && lesson.body.trim().length > 0 && (

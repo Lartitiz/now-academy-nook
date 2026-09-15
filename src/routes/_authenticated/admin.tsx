@@ -214,7 +214,7 @@ type LessonPayload = {
   steps?: Step[];
   resources: RawResource[];
 };
-type Step = { title: string; body: string; resources: RawResource[] };
+type Step = { id?: string; title: string; body: string; resources: RawResource[] };
 
 function ContentPanel() {
   const fetchModules = useServerFn(listAdminModules);
@@ -497,6 +497,7 @@ function LessonEditor({
   );
   const [steps, setSteps] = useState<Step[]>(
     (Array.isArray(lesson.steps) ? (lesson.steps as Step[]) : []).map((step) => ({
+      id: step.id,
       title: step.title ?? "",
       body: step.body ?? "",
       resources: step.resources ?? [],
@@ -666,7 +667,10 @@ function LessonEditor({
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  setSteps((items) => [...items, { title: "", body: "", resources: [] }])
+                  setSteps((items) => [
+                    ...items,
+                    { id: crypto.randomUUID(), title: "", body: "", resources: [] },
+                  ])
                 }
               >
                 <Plus className="size-4" />

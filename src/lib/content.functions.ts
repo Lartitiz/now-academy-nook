@@ -5,9 +5,12 @@ import { notFound } from "@tanstack/react-router";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { withExerciseIds, type Exercise } from "./exercises";
+
 const ResourceSchema = z.union([z.string(), z.object({ label: z.string(), url: z.string() })]);
 
 const StepSeed = z.object({
+  id: z.string().min(1).max(80).optional(),
   title: z.string().default(""),
   body: z.string().default(""),
   resources: z.array(ResourceSchema).default([]),
@@ -73,9 +76,12 @@ export const listAdminModules = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return (data ?? []).map((module) => ({
       ...module,
-      lessons: [...module.lessons].sort(
-        (a, b) => a.position - b.position || a.id.localeCompare(b.id),
-      ),
+      lessons: module.lessons
+        .map((lesson) => ({
+          ...lesson,
+          steps: withExerciseIds((lesson.steps ?? []) as Exercise[]),
+        }))
+        .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id)),
     }));
   });
 
@@ -116,7 +122,11 @@ export const getLesson = createServerFn({ method: "GET" })
     const prev = idx > 0 ? ordered[idx - 1].id : null;
     const next = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1].id : null;
 
-    return { lesson, prev, next };
+    return {
+      lesson: { ...lesson, steps: withExerciseIds((lesson.steps ?? []) as Exercise[]) },
+      prev,
+      next,
+    };
   });
 
 export const upsertModule = createServerFn({ method: "POST" })
@@ -156,7 +166,9 @@ export const upsertLesson = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.from("lessons").upsert(data);
+    const { error } = await context.supabase
+      .from("lessons")
+      .upsert({ ...data, ...(data.steps ? { steps: withExerciseIds(data.steps) } : {}) });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -214,7 +226,7 @@ export const importSeed = createServerFn({ method: "POST" })
               body: lesson.body,
               intro: lesson.intro,
               videos: lesson.videos,
-              steps: lesson.steps,
+              steps: lesson.steps.map((step) => ({ ...step, id: crypto.randomUUID() })),
               resources: lesson.resources,
             })),
           );
