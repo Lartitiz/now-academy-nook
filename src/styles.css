@@ -321,3 +321,25 @@
 .exercise-prose > p:first-child {
   margin-top: 0;
 }
+
+/* Keep reusable prompts and examples readable inside exercise cards. */
+.exercise-prose h4 {
+  font-size: 1.05rem;
+}
+.exercise-prose blockquote {
+  padding: 1rem;
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+.exercise-prose blockquote > * + * {
+  margin-top: 0.85em;
+}
+.exercise-prose blockquote > :first-child {
+  margin-top: 0;
+}
+.exercise-prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+.exercise-prose th {
+  font-weight: 600;
+  background: #fff4f8;
+}
